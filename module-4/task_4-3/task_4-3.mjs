@@ -16,7 +16,6 @@ const CarTypes = [
   { value: 13, caption: "Nissan" },
 ];
 
-
 const GirlsNames = ["Anne", "Inger", "Kari", "Marit", "Ingrid", "Liv", "Eva", "Berit", "Astrid", "Bjørg", "Hilde", "Anna", "Solveig", "Marianne", "Randi", "Ida", "Nina", "Maria", "Elisabeth", "Kristin"];
 
 const MovieGenre = [
