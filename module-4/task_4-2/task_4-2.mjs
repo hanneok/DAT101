@@ -23,7 +23,7 @@ for (let i = 0; i < /*20*/ part1Array.length; /*i++*/ i = i + 1) {
 printOut(part1Text);
 printOut(newLine);
 
-printOut("--- Part 2 ----------------------------------------------------------------------------------------------");
+printOut("--- Part 2 ---------------------------------------------------------------------------------------------");
 /* Put your code below here!*/
 printOut(`
 Take the array from task 1<br>
