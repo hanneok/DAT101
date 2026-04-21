@@ -12,7 +12,7 @@ export class TBait extends TSprite {
         super(aSpcvs, aSPI, 200, 0);
         const amp = Math.ceil(Math.random() * 3);
         this.#wave = new TSineWave(amp, 1);
-        this.#speed = Math.ceil(Math.random() * 10) / 10;
+        this.#speed = Math.ceil(Math.random() * 8) / 8;
         this.y += this.#wave.value;  
         this.animationSpeed = this.#speed * 50;
     }
@@ -28,6 +28,6 @@ export class TBait extends TSprite {
     distanceTo(aPoint){
         const dx = Math.pow(this.center.x - aPoint.x, 2);
         const dy = Math.pow(this.center.y - aPoint.y, 2);
-        return Math.sqrt(dx + dy); //kvadratroten av dx og dy (delta x og delta y) som gjør at du kan spise sommerfugler på en vanskeligere måte.
+        return Math.sqrt(dx + dy); 
     }
 }

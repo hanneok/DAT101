@@ -9,7 +9,7 @@ import { TBait } from "./bait.js";
 import { TMenu } from "./menu.js";
 
 //--------------- Objects and Variables ----------------------------------//
-const chkMuteSound = document.getElementById("chkMuteSound");
+export const chkMuteSound = document.getElementById("chkMuteSound");
 const rbDayNight = document.getElementsByName("rbDayNight");
 const cvs = document.getElementById("cvs");
 const spcvs = new TSpriteCanvas(cvs);
@@ -32,33 +32,41 @@ const SpriteInfoList = {
   medal:        { x: 985 , y: 635 , width: 44   , height: 44  , count: 4  },
 };
 
-//1 steg, lag en ny fil (med klasser og objekter?), steg 2, (under her) importer filen her, steg 3, lag objekt av klassen her. tror jeg. lærer sier steg 3 er tegne den i draw game under
-export const EGameStatus = { idle: 0, countdown: 1, gaming: 2, heroIsDead: 3, gameOver: 4, state: 0 }; //endra 1 til 0 for å sette den til idle mode. gjorde rett etter jeg lagde menu.js fila.
+
+export const EGameStatus = { idle: 0, countdown: 1, gaming: 2, heroIsDead: 3, gameOver: 4, state: 0 }; //0 to change it to idle mode.
 const Background = new TBackground(spcvs, SpriteInfoList);
 export const hero = new THero(spcvs, SpriteInfoList.hero1);
-const obstacles = [];
-const baits = [];
-export const menu = new TMenu (spcvs, SpriteInfoList); //må eksportere her for å få brukt den i andre filer.
+export const obstacles = [];
+export const baits = [];
+//export const menu = new TMenu (spcvs, SpriteInfoList);
+let obstaclePassed = false; //to know if we have passed the obstacle.
 
 
 //--------------- Functions ----------------------------------------------//
 
 
+export function restartGame() {
+  heroRestart();
+  EGameStatus.state === EGameStatus.idle;
+}
+
 export function startGame(){
   EGameStatus.state = EGameStatus.gaming;
+  menu.resetScore(); // resets to 0
+  menu.showScore(); // show top-left score
   setTimeout (spawnObstacle, 1000);
-  setTimeout (spawnBait, 1000);
+  setTimeout (spawnBait, 1000); //timeout for bait and obstacles to spawn (1 sec).
 }
 
 
 
 
 function spawnBait(){
-  if(EGameStatus.state === EGameStatus.gaming){ //skrev denne etter jeg lagde menu.js for å stoppe spawning av sommerfugler når ikke i gaming mode
+  if(EGameStatus.state === EGameStatus.gaming){ //bait stops spawning when game is not in gaming mode.
   const bait = new TBait(spcvs, SpriteInfoList.food);
   baits.push(bait);
   const nextTime = Math.ceil(Math.random()*3) + 1;
-  setTimeout (spawnBait, nextTime * 1000); // la på nextTime etter å ha lagt til setningen over. det gjorde at den spawner saktere.
+  setTimeout (spawnBait, nextTime * 1000); // spawns a new bait after a random time between 1 and 4 seconds.
 }
 }
 
@@ -68,19 +76,25 @@ if (EGameStatus.state === EGameStatus.gaming){
   const obstacle = new TObstacle(spcvs, SpriteInfoList.obstacle);
 obstacles.push(obstacle);
 const nextTime = Math.ceil(Math.random() * 3) + 1; 
-console.log(`Next obstacle in ${nextTime} seconds`);
+//console.log(`Next obstacle in ${nextTime} seconds`);
 setTimeout (spawnObstacle, nextTime * 1000);
 }
 }
 
 
+function isColliding(a, b) {
+  return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+}
+
+
 function animateGame() {
   hero.animate();
-  let eaten = -1; //for å finne ut når vi har spist en sommerfugl
-  for(let i = 0; i < baits.length; i++){
+  if (EGameStatus.state !== EGameStatus.gaming) return;
+  let eaten = -1;
+  for (let i = 0; i < baits.length; i++) {
     const bait = baits[i];
     bait.animate();
-    if(bait.distanceTo(hero.center) < 20){
+    if (bait.distanceTo(hero.center) < 20) {
       eaten = i;
     }
   }
@@ -96,54 +110,88 @@ function animateGame() {
   for(let i = 0; i < obstacles.length; i++){
     const obstacle = obstacles[i];
   obstacle.animate();
-  if (obstacle.x < -50){
-  deleteObstacle = true;
-  obstaclePassed = false;
-  }else if(obstacle.x + obstacle.width < hero.x){ // = når fuglen går forbi røret får du poeng. also. hadde ikke width fra før så lagde en i obstacles fila.
-    if(!obstaclePassed){
-    menu.incGameScore(1); // denne fantes ikke så måtte lage den
-    obstaclePassed = true;
-  }
-}
-}
-if(deleteObstacle){
-  obstacles.splice(0,1);
-}
-}
+
+
+ if (!obstacle.passed && obstacle.x + obstacle.width < hero.x) {
+    obstacle.passed = true;
+     menu.incGameScore(1);
 }
 
-function drawGame() { // sett fuksjonene i riktig rekkefølge, fra loade først, til sist som layers på Photoshop
+ if (isColliding(hero, obstacle.getUpSprite()) || isColliding(hero, obstacle.getDownSprite())) {
+  onHeroDeath();
+   return;
+  } 
+
+
+if (obstacle.x < -50) {
+  obstacles.splice(i, 1);
+  i--;
+      }
+    }
+
+if (hero.y + hero.height >= cvs.height - SpriteInfoList.ground.height) {
+ onHeroDeath();
+  return;
+  }
+  }
+}
+
+function onHeroDeath() {
+  if (EGameStatus.state !== EGameStatus.gaming) return;
+
+  EGameStatus.state = EGameStatus.heroIsDead;
+  hero.dead();
+
+  console.log("HERO DIED");
+
+  setTimeout(() => {
+    EGameStatus.state = EGameStatus.gameOver;
+    menu.showGameOver();
+  }, 1000);
+}
+
+function drawGame() { // Draw them in the right order.
   Background.drawBackground();
   for(let i = 0; i < baits.length; i++){
     const bait = baits[i];
     bait.draw();
   }
 
-  for (let i = 0; i < obstacles.length; i++) { // idk skal dette være her?
+  for (let i = 0; i < obstacles.length; i++) { 
     const obstacle = obstacles[i];
     obstacle.draw();
   } 
 
-  hero.draw(); // under her fjerna jeg mye, som obstacles og sånt. why? var etter jeg la inn obstacles i animateGame ifølge AI, men eg tenker det skjedde etter jeg la inn sommerfugler.
+
+  hero.draw(); 
    Background.drawGround();
-   menu.draw();
+    menu.draw(EGameStatus.state);
 }
 
-function loadGame() {
+export let menu;
+
+
+function loadGame(spriteImage) {
   console.log("Game Loaded");
-  // Set canvas size to background size
-  cvs.width = SpriteInfoList.background.width;
+
+for (let key in SpriteInfoList) {
+    SpriteInfoList[key].img = spriteImage;
+  }
+
+  cvs.width = SpriteInfoList.background.width; // Set canvas size to background size
   cvs.height = SpriteInfoList.background.height; 
 
-  // Overload the spcvs draw function here!
+  menu = new TMenu(spcvs, SpriteInfoList);
+ 
 spcvs.onDraw = drawGame;
 
-// start animate  engine
-setInterval(animateGame, 10);
-//setTimeout(spawnObstacle,1000) //500millisekunder aka 1 sec
-//setTimeout(spawnBait,1000) //spawn bait etter 3 sekunder (hvorfor fjerner vi disse to linjene? fordi vi har lagt dem inn i startGame funksjonen som blir kalt når vi trykker play knappen i menyen)
 
-} // end of loadGame
+ EGameStatus.state = EGameStatus.idle;
+
+
+
+setInterval(animateGame, 10);
+} 
 
 
 function onKeyDown(aEvent) {
@@ -155,20 +203,24 @@ function onKeyDown(aEvent) {
   }
       break;
   }
-} // end of onKeyDown
+} 
 
-function setSoundOnOff(){
-  // Mute or unmute the game sound based on checkbox
+function setSoundOnOff() {
+  const isMuted = chkMuteSound.checked;
+  menu.setSoundMute(isMuted);
+}
 
-} // end of setSoundOnOff
+function setDayNight(aEvent) {
+  const isNight = aEvent.target.value == 0;
+  Background.setDayNight(isNight);
 
-function setDayNight(aEvent){ 
-  // Set day or night mode based on radio buttons
-  // Day mode is when value is 1, night mode is 0, you can use this as a boolean, 1=true, 0=false
-  // e.g., isDayMode = (aEvent.target.value == 1);
+  for (let i = 0; i < obstacles.length; i++) {
+    obstacles[i].setDayNight(isNight);
+  }
+
+
   console.log(`Day/Night mode changed: ${aEvent.target.value}`);
-
-} // end of setDayNight
+} 
 
 //--------------- Main Code ----------------------------------------------//
 chkMuteSound.addEventListener("change", setSoundOnOff);
