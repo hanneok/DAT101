@@ -35,7 +35,7 @@ export class TMenu {
     this.#sfCountDown = null;
     this.#sfRunning = null;
     this.#spGameScore = new TSpriteNumber(aSpcvs, aSPI.numberSmall, 10, 10);
-    this.#spGameScore.alpha = 0.5;
+    this.#spGameScore.alpha = 0.5; 
     this.#spGameOver = new TSprite(aSpcvs, aSPI.gameOver, 180, 150);
     this.#spGameOver.visible = false;
 
@@ -107,11 +107,19 @@ export class TMenu {
   }
 
   resetScore() {
-    this.#spGameScore.value = 0;
+    this.gameScore = 0;
+  }
+
+  get gameScore() {
+    return this.#spGameScore.value;
+  }
+
+  set gameScore(value) {
+    this.#spGameScore.value = value;
   }
 
   getGameScore() {
-    return this.#spGameScore.value;
+    return this.gameScore;
   }
 
 
@@ -189,7 +197,7 @@ export class TMenu {
     this.#spPlayBtn.hidden = false;
 
   
-    const currentScore = this.getGameScore();
+    const currentScore = this.gameScore;
     const storedHighScore = Number(localStorage.getItem("highScore")) || 0;
     const newHighScore = Math.max(currentScore, storedHighScore);
 
